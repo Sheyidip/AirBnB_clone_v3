@@ -68,7 +68,7 @@ test_db_storage.py'])
                             "{:s} method needs a docstring".format(func[0]))
 
 
-class TestFileStorage(unittest.TestCase):
+class TestDBStorage(unittest.TestCase):
     """Test the FileStorage class"""
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_all_returns_dict(self):
@@ -86,3 +86,48 @@ class TestFileStorage(unittest.TestCase):
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_save(self):
         """Test that save properly saves objects to file.json"""
+
+    def test_delete(self):
+        """Test that delete properly deletes objects"""
+        storage = TestDBStorage.storage
+        obj_count = len(storage.all())
+        state = State(name="Texas")
+        storage.new(state)
+        storage.save()
+        self.assertEqual(obj_count + 1, len(storage.all()))
+        storage.delete(state)
+        self.assertEqual(obj_count + 1, len(storage.all()))
+        storage.save()
+        self.assertEqual(obj_count, len(storage.all()))
+
+    def test_get(self):
+        """Test that get properly retrieves objects by class and id"""
+        storage = TestDBStorage.storage
+        state = State(name="Florida")
+        storage.new(state)
+        storage.save()
+        self.assertIs(state, storage.get(State, state.id))
+        self.assertIsNone(storage.get(State, "fake_id"))
+        self.assertIsNone(storage.get(User, state.id))
+        storage.delete(state)
+        storage.save()
+        self.assertIsNone(storage.get(State, state.id))
+
+    def test_count(self):
+        """Test that count properly counts objects by class"""
+        storage = TestDBStorage.storage
+        obj_count = len(storage.all())
+        state_count = len(storage.all(State))
+        state = State(name="New York")
+        storage.new(state)
+        storage.save()
+        self.assertEqual(obj_count + 1, storage.count())
+        self.assertEqual(state_count + 1, storage.count(State))
+        self.assertEqual(obj_count + 1, len(storage.all()))
+        self.assertEqual(state_count + 1, len(storage.all(State)))
+        storage.delete(state)
+        storage.save()
+        self.assertEqual(obj_count, storage.count())
+        self.assertEqual(state_count, storage.count(State))
+        self.assertEqual(obj_count, len(storage.all()))
+        self.assertEqual(state_count, len(storage.all(State)))

@@ -113,3 +113,48 @@ class TestFileStorage(unittest.TestCase):
         with open("file.json", "r") as f:
             js = f.read()
         self.assertEqual(json.loads(string), json.loads(js))
+
+    def test_delete(self):
+        """Test that delete properly deletes objects"""
+        storage = TestFileStorage.storage
+        obj_count = len(storage.all())
+        state = State(name="Texas")
+        storage.new(state)
+        storage.save()
+        self.assertEqual(obj_count + 1, len(storage.all()))
+        storage.delete(state)
+        self.assertEqual(obj_count + 1, len(storage.all()))
+        storage.save()
+        self.assertEqual(obj_count, len(storage.all()))
+
+    def test_get(self):
+        """Test that get properly retrieves objects by class and id"""
+        storage = TestFileStorage.storage
+        state = State(name="Florida")
+        storage.new(state)
+        storage.save()
+        self.assertIs(state, storage.get(State, state.id))
+        self.assertIsNone(storage.get(State, "fake_id"))
+        self.assertIsNone(storage.get(User, state.id))
+        storage.delete(state)
+        storage.save()
+        self.assertIsNone(storage.get(State, state.id))
+
+    def test_count(self):
+        """Test that count properly counts objects by class"""
+        storage = TestFileStorage.storage
+        obj_count = len(storage.all())
+        state_count = len(storage.all(State))
+        state = State(name="New York")
+        storage.new(state)
+        storage.save()
+        self.assertEqual(obj_count + 1, storage.count())
+        self.assertEqual(state_count + 1, storage.count(State))
+        self.assertEqual(obj_count + 1, len(storage.all()))
+        self.assertEqual(state_count + 1, len(storage.all(State)))
+        storage.delete(state)
+        storage.save()
+        self.assertEqual(obj_count, storage.count())
+        self.assertEqual(state_count, storage.count(State))
+        self.assertEqual(obj_count, len(storage.all()))
+        self.assertEqual(state_count, len(storage.all(State)))
